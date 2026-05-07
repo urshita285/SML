@@ -1,29 +1,39 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import struct
+import requests
+import zipfile
+import io
+import os
 
-def load_images(filename):
-    with open(filename, 'rb') as f:
-        magic, num, rows, columns = struct.unpack(">IIII", f.read(16))
-        if magic != 2051:
-            raise ValueError("Bad magic number in images file!")
-        images = np.frombuffer(f.read(), dtype=np.uint8)
-        images = images.reshape(num, rows, columns)
-    return images
+def prepare_data_from_github(repo_url, target_folder='fashion-mnist'):
+    if not os.path.exists(target_folder):
+        print(f"Directory '{target_folder}' not found. Downloading from GitHub...")
+        download_url = f"{repo_url}/releases/download/v1.0.0-alpha/fashion-mnist.zip"
+        
+        try:
+            response = requests.get(download_url)
+            response.raise_for_status() # Check for 404/500 errors
+            
+            with zipfile.ZipFile(io.BytesIO(response.content)) as z:
+                z.extractall('.') # Extracts into the current directory
+            print("Download and extraction complete.")
+        except Exception as e:
+            print(f"Error downloading dataset: {e}")
+            return False
+    else:
+        print("Dataset directory already exists. Skipping download.")
+    return True
 
-def load_labels(filename):
-    with open(filename, 'rb') as f:
-        magic, num = struct.unpack(">II", f.read(8))
-        if magic != 2049:
-            raise ValueError("Bad magic number in labels file!")
-        labels = np.frombuffer(f.read(), dtype=np.uint8)
-    return labels
+GITHUB_REPO = "https://github.com/urshita285/SML"
 
-# Load data
-X_train_raw = load_images('fashion-mnist/train-images-idx3-ubyte')
-y_train_raw = load_labels('fashion-mnist/train-labels-idx1-ubyte')
-X_test_raw = load_images('fashion-mnist/t10k-images-idx3-ubyte')
-y_test_raw = load_labels('fashion-mnist/t10k-labels-idx1-ubyte')
+if prepare_data_from_github(GITHUB_REPO):
+    X_train_raw = load_images('fashion-mnist/train-images-idx3-ubyte')
+    y_train_raw = load_labels('fashion-mnist/train-labels-idx1-ubyte')
+    X_test_raw = load_images('fashion-mnist/t10k-images-idx3-ubyte')
+    y_test_raw = load_labels('fashion-mnist/t10k-labels-idx1-ubyte')
+else:
+    print("Could not load data. Please check your GitHub Release URL.")
 
 # Filter classes 0,1,2
 mask_train = np.isin(y_train_raw, [0,1,2])
