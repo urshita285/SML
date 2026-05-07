@@ -27,6 +27,23 @@ def prepare_data_from_github(repo_url, target_folder='fashion-mnist'):
 
 GITHUB_REPO = "https://github.com/urshita285/SML"
 
+def load_images(filename):
+    with open(filename, 'rb') as f:
+        magic, num, rows, columns = struct.unpack(">IIII", f.read(16))
+        if magic != 2051:
+            raise ValueError("Bad magic number in images file!")
+        images = np.frombuffer(f.read(), dtype=np.uint8)
+        images = images.reshape(num, rows, columns)
+    return images
+
+def load_labels(filename):
+    with open(filename, 'rb') as f:
+        magic, num = struct.unpack(">II", f.read(8))
+        if magic != 2049:
+            raise ValueError("Bad magic number in labels file!")
+        labels = np.frombuffer(f.read(), dtype=np.uint8)
+    return labels
+
 if prepare_data_from_github(GITHUB_REPO):
     X_train_raw = load_images('fashion-mnist/train-images-idx3-ubyte')
     y_train_raw = load_labels('fashion-mnist/train-labels-idx1-ubyte')
